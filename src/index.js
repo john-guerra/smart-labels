@@ -15,7 +15,7 @@ import * as d3 from "d3";
 // WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 // ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-export function smartLabels(
+export default function smartLabels(
   data,
   {
     x = (d) => d[0], // x coordinate accessor, expected to be in pixels
@@ -424,7 +424,7 @@ export function smartLabels(
 // WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 // ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-export function occlusion(svg, against = "text") {
+function occlusion(svg, against = "text") {
   const nodes = d3
     .sort(svg.selectAll(against), (node) => +node.getAttribute("data-priority"))
     .reverse()
