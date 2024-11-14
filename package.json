@@ -1,0 +1,42 @@
+{
+  "name": "smart-labels",
+  "version": "0.0.1",
+  "description": "A basic library for adding labels to a visualization when there is enough space",
+  "type": "module",
+  "main": "dist/smartLabels.min.js",
+  "module": "dist/smartLabels.es.js",
+  "browser": "dist/smartLabels.min.js",
+  "unpkg": "dist/smartLabels.min.js",
+  "jsdelivr": "dist/smartLabels.min.js",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "pretest": "npm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.14.0",
+    "@rollup/plugin-json": "^6.1.0",
+    "eslint": "^9.14.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-html": "^8.1.2",
+    "globals": "^15.12.0",
+    "prettier": "^3.3.3",
+    "rollup": "^4.20.0"
+  },
+  "dependencies": {
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "d3": "^7.9.0",
+    "rollup-plugin-ascii": "^0.0.3",
+    "rollup-plugin-commonjs": "^10.1.0"
+  },
+  "author": {
+    "name": "John Alexis Guerra Gómez",
+    "url": "https://johnguerra.co"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/john-guerra/smart-labels/issues"
+  },
+  "homepage": "https://github.com/john-guerra/smart-labels"
+}
