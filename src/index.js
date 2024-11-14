@@ -72,12 +72,37 @@ export default function smartLabels(
   height = height || yExtent[1] - yExtent[0];
 
   if (debug) console.log("✅ smartLabels renderer", renderer);
+
+  function checkIfTargetMatchesRenderer(target, renderer) {
+    if (target && target.node) {
+      target = target.node();
+    }
+    if (renderer.toLocaleLowerCase() === "canvas") {
+      return target instanceof HTMLCanvasElement;
+    } else {
+      return target instanceof SVGElement;
+    }
+  }
+
+  if (!checkIfTargetMatchesRenderer(target, renderer)) {
+    if (debug) console.log("❌ smartLabels Target doesn't match the renderer", target, renderer);
+    throw new Error("Smartlabels Target doesn't match the renderer", target, renderer);
+  }
+
+  // Try to reuse the target
   if (renderer.toLocaleLowerCase() === "canvas") {
-    target =
-      d3.select(target) ||
-      d3.create("canvas").attr("width", width).attr("height", height);
+    if (target) {
+      target = d3.select(target.node ? target.node() : target);
+    } else {
+      target = d3.create("canvas").attr("width", width).attr("height", height);
+    }
     useOcclusion = false;
   } else {
+    if (target) {
+      target = d3.select(target.node ? target.node() : target);
+    } else {
+      target = d3.create("svg").attr("viewBox", [0, 0, width, height]);
+    }
     target = target || d3.create("svg").attr("viewBox", [0, 0, width, height]);
   }
 
