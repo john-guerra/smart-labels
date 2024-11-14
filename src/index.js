@@ -20,6 +20,7 @@ export default function smartLabels(
   {
     x = (d) => d[0], // x coordinate accessor, expected to be in pixels
     y = (d) => d[1], // y coordinate accessor, expected to be in pixels
+    r = () => 3, // radius accessor, expected to be in pixels
     label = (d, i) => i, // Accessor for the label
     fill = "#333", // label fill color
     stroke = "white", // label stroke color
@@ -53,11 +54,16 @@ export default function smartLabels(
     pointsStroke = "#ccc",
     renderer = "svg",
     debug = false,
+    selected = null,
+    padding = 3, // label padding in pixels
   } = {}
 ) {
   data = data.filter(
-    (d) =>
-      x(d) !== undefined && x(d) !== null && y(d) !== undefined && y(d) !== null
+    (d, index) =>
+      x(d, index) !== undefined &&
+      x(d, index) !== null &&
+      y(d, index) !== undefined &&
+      y(d, index) !== null
   );
 
   let xExtent = d3.extent(data, x),
@@ -86,16 +92,16 @@ export default function smartLabels(
   let cells = data.map((d, i) => [d, voronoi.cellPolygon(i)]);
   // Replace null cells with the nearest one
   cells = cells
-    .map(([d, cell]) => [d, getNearestCell(d, cell)])
+    .map(([d, cell], index) => [d, getNearestCell(d, cell, index)])
     .map(([d, cell]) => ({ d, cell, show: -d3.polygonArea(cell) > threshold }));
 
   // cells can be null when we have duplicated coords
   // https://github.com/d3/d3-delaunay/issues/106
-  function getNearestCell(d, cell) {
+  function getNearestCell(d, cell, index) {
     if (!cell) {
-      const i = delaunay.find(x(d), y(d));
+      const i = delaunay.find(x(d, index), y(d, index));
       if (i === -1) {
-        console.log("couldn't find cell", i, d, x(d), y(d));
+        console.log("couldn't find cell", i, d, x(d, index), y(d, index));
         return null;
       }
       cell = cells[i][1];
@@ -126,13 +132,25 @@ export default function smartLabels(
       .attr("stroke", "none");
 
     const orient = {
-      top: (text) => text.attr("text-anchor", "middle").attr("y", -6),
+      top: (text) =>
+        text
+          .attr("text-anchor", "middle")
+          .attr("y", (d, i) => -(r(d, i) + padding)),
       right: (text) =>
-        text.attr("text-anchor", "start").attr("dy", "0.35em").attr("x", 6),
+        text
+          .attr("text-anchor", "start")
+          .attr("dy", "0.35em")
+          .attr("x", (d, i) => r(d, i) + padding),
       bottom: (text) =>
-        text.attr("text-anchor", "middle").attr("dy", "0.71em").attr("y", 6),
+        text
+          .attr("text-anchor", "middle")
+          .attr("dy", "0.71em")
+          .attr("y", (d, i) => r(d, i) + padding),
       left: (text) =>
-        text.attr("text-anchor", "end").attr("dy", "0.35em").attr("x", -6),
+        text
+          .attr("text-anchor", "end")
+          .attr("dy", "0.35em")
+          .attr("x", (d, i) => -(r(d, i) + padding)),
     };
 
     if (showAnchors || labelsInCentroids) {
@@ -149,8 +167,10 @@ export default function smartLabels(
         .join("path")
         .attr("class", "anchor")
         .attr("display", ({ show }) => (show ? null : "none"))
-        .attr("d", ({ d, cell }) =>
-          cell ? `M${d3.polygonCentroid(cell)}L${x(d)},${y(d)}` : null
+        .attr("d", ({ d, cell }, index) =>
+          cell
+            ? `M${d3.polygonCentroid(cell)}L${x(d, index)},${y(d, index)}`
+            : null
         );
     }
 
@@ -193,11 +213,14 @@ export default function smartLabels(
       .data((d) => d)
       .join("text")
       .style("font", font)
-      .each(function ({ d, cell }) {
+      .each(function ({ d, cell }, index) {
         if (!cell) return;
         const [cx, cy] = d3.polygonCentroid(cell);
         const angle =
-          (Math.round((Math.atan2(cy - y(d), cx - x(d)) / Math.PI) * 2) + 4) %
+          (Math.round(
+            (Math.atan2(cy - y(d, index), cx - x(d, index)) / Math.PI) * 2
+          ) +
+            4) %
           4;
 
         d3.select(this).call(
@@ -210,13 +233,13 @@ export default function smartLabels(
                 : orient.left
         );
       })
-      .attr("transform", ({ d, cell }) => {
+      .attr("transform", ({ d, cell }, index) => {
         if (labelsInCentroids) {
           const [cx, cy] = d3.polygonCentroid(cell);
 
           return `translate(${cx}, ${cy})`;
         } else {
-          return `translate(${x(d)}, ${y(d)})`;
+          return `translate(${x(d, index)}, ${y(d, index)})`;
         }
       })
       .attr("display", ({ show }) => (show ? null : "none"))
@@ -276,20 +299,26 @@ export default function smartLabels(
     }
   } // renderSVG
 
-  function renderCanvas() {
-    const context = target.node().getContext("2d");
-    // const ratio = window.devicePixelRatio || 1;
-    // target.attr("width", width * ratio).attr("height", height * ratio);
-    // context.scale(ratio, ratio);
-    // context.clearRect(0, 0, width, height);
-
+  function renderCanvasAnchorsVoronoiPoints(context) {
+    if (debug)
+      console.log(
+        "renderCanvasAnchorsVoronoiPoints",
+        "showAnchors",
+        showAnchors,
+        "labelsInCentroids",
+        labelsInCentroids,
+        "showVoronoi",
+        showVoronoi,
+        "showPoints",
+        showPoints
+      );
     if (showAnchors || labelsInCentroids) {
-      cells.forEach(({ d, cell, show }) => {
+      cells.forEach(({ d, cell, show }, index) => {
         if (!show) return;
         const [cx, cy] = d3.polygonCentroid(cell);
         context.beginPath();
         context.moveTo(cx, cy);
-        context.lineTo(x(d), y(d));
+        context.lineTo(x(d, index), y(d, index));
         context.strokeStyle = anchorsStroke;
         context.stroke();
       });
@@ -304,23 +333,40 @@ export default function smartLabels(
 
     if (showPoints) {
       context.beginPath();
-      delaunay.renderPoints(context, 2);
+      // delaunay.renderPoints(context, 2);
+      context.save();
+      context.globalAlpha = 0.7;
+      context.fillStyle = "black";
+      data.forEach((d, i) => {
+        context.beginPath();
+        context.arc(x(d, i), y(d, i), r(d, i), 0, 2 * Math.PI);
+      });
+      context.restore();
       context.fillStyle = pointsFill;
       context.fill();
       context.strokeStyle = pointsStroke;
       context.stroke();
     }
+  } // renderCanvasAnchorsVoronoiPoints
 
-    cells.forEach(({ d, cell, show }) => {
-      if (!show) return;
+  function renderCanvasLabels(context, selected) {
+    cells.forEach(({ d, cell, show }, index) => {
+      if (!show && index !== selected) return;
       const [cx, cy] = d3.polygonCentroid(cell);
       const angle =
-        (Math.round((Math.atan2(cy - y(d), cx - x(d)) / Math.PI) * 2) + 4) % 4;
+        (Math.round(
+          (Math.atan2(cy - y(d, index), cx - x(d, index)) / Math.PI) * 2
+        ) +
+          4) %
+        4;
 
       context.save();
+      const dr = r(d, index) + padding;
+      const dx = angle === 0 ? dr : angle === 2 ? -dr : dr;
+      const dy = angle === 1 ? dr : angle === 3 ? -dr : dr;
       context.translate(
-        labelsInCentroids ? cx : x(d),
-        labelsInCentroids ? cy : y(d)
+        labelsInCentroids ? cx : x(d, index) + dx,
+        labelsInCentroids ? cy : y(d, index) + dy
       );
       context.textAlign =
         angle === 0
@@ -338,16 +384,23 @@ export default function smartLabels(
             : angle === 2
               ? "middle"
               : "bottom";
-      context.font = font;
+      context.font = index === selected ? hoverFont : font;
       context.fillStyle = fill;
       context.strokeStyle = stroke;
       context.lineWidth = strokeWidth;
-      context.strokeText(label(d), 0, 0);
-      context.fillText(label(d), 0, 0);
+      // if (debug) console.log(index, dx, dy, angle);
+      context.strokeText(label(d, index), 0, 0);
+      context.fillText(label(d, index), 0, 0);
       context.restore();
     });
+  } // renderCanvasLabels
 
-    let selected = null;
+  function renderCanvas() {
+    const context = target.node().getContext("2d");
+
+    renderCanvasAnchorsVoronoiPoints(context);
+    renderCanvasLabels(context, selected);
+
     if (hover) {
       if (debug) console.log("setting onmousemove", target);
 
@@ -358,44 +411,9 @@ export default function smartLabels(
         selected = i;
 
         context.clearRect(0, 0, width, height);
-        cells.forEach(({ d, cell, show }, index) => {
-          if (!show && index !== selected) return;
-          const [cx, cy] = d3.polygonCentroid(cell);
-          const angle =
-            (Math.round((Math.atan2(cy - y(d), cx - x(d)) / Math.PI) * 2) + 4) %
-            4;
-
-          context.save();
-          context.translate(
-            labelsInCentroids ? cx : x(d),
-            labelsInCentroids ? cy : y(d)
-          );
-          context.textAlign =
-            angle === 0
-              ? "left"
-              : angle === 1
-                ? "center"
-                : angle === 2
-                  ? "right"
-                  : "center";
-          context.textBaseline =
-            angle === 0
-              ? "middle"
-              : angle === 1
-                ? "top"
-                : angle === 2
-                  ? "middle"
-                  : "bottom";
-          context.font = index === selected ? hoverFont : font;
-          context.fillStyle = fill;
-          context.strokeStyle = stroke;
-          context.lineWidth = strokeWidth;
-          context.strokeText(label(d), 0, 0);
-          context.fillText(label(d), 0, 0);
-          context.restore();
-        });
-
+        renderCanvasAnchorsVoronoiPoints(context);
         if (onHover && typeof onHover === "function") onHover(i);
+        renderCanvasLabels(context, selected);
       });
     }
   } // renderCanvas

@@ -14,17 +14,17 @@
     </label>
     <div id="target"></div>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <!-- <script src="https://cdn.jsdelivr.net/npm/smart-labels@1"></script> -->
-    <script src="../dist/smartLabels.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/smart-labels"></script>
+    <!-- <script src="../dist/smartLabels.js"></script> -->
 
     <script>
       /* global d3, smartLabels */
 
       let width = 800,
         height = 600,
-        showAnchors = true,
+        showAnchors = false,
+        labelsInCentroids = false,
         showVoronoi = false,
-        labelsInCentroids = true,
         threshold = 1000,
         useSmartLabels = true,
         gLabels;
@@ -87,7 +87,7 @@
 
         function redrawLabels() {
           console.log("redrawLabels", gLabels, threshold);
-          const sl = smartLabels.smartLabels(data, {
+          const sl = smartLabels(data, {
             target: gLabels,
             label: (d) => d.Name,
             x: (d) => xScale(x(d)),

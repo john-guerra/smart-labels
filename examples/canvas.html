@@ -27,17 +27,17 @@
       <canvas id="canvas"></canvas>
     </div>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <!-- <script src="https://cdn.jsdelivr.net/npm/smart-labels@1"></script> -->
-    <script src="../dist/smartLabels.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/smart-labels"></script>
+    <!-- <script src="../dist/smartLabels.js"></script> -->
 
     <script>
       /* global d3, smartLabels */
 
       let width = 800,
         height = 600,
-        showAnchors = true,
+        showAnchors = false,
         showVoronoi = false,
-        labelsInCentroids = true,
+        labelsInCentroids = false,
         threshold = 1000,
         useSmartLabels = true;
 
@@ -96,17 +96,6 @@
           .attr("transform", `translate(0, ${yScale.range()[0]})`)
           .call(d3.axisBottom(xScale));
 
-        // g.selectAll("circle")
-        //   .data(data)          
-        //   .join("circle")
-        //   .attr("fill", "red")
-        //   .attr("opacity", 0.3)
-        //   .attr("cx", (d) => xScale(x(d)))
-        //   .attr("cy", (d) => yScale(y(d)))
-        //   .attr("r", 3)
-        //   .append("title")
-        //   .text((d) => d.name);
-
         function drawPoints() {
           ctx.save();
           ctx.globalAlpha = 0.7;
@@ -120,7 +109,7 @@
         }
 
         function redrawLabels() {
-          const sl = smartLabels.smartLabels(data, {
+          const sl = smartLabels(data, {
             target: canvas,
             label: (d) => d.Name,
             x: (d) => xScale(x(d)),
