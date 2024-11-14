@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      #target {
+        position: relative;
+      }
+      #target svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Smart Labels Canvas</h1>
+    <label
+      >Threshold:
+      <input id="inThreshold" type="range" value="1000" min="0" max="5000" />
+      <output id="outThreshold"></output>
+    </label>
+    <div id="target">
+      <svg></svg>
+      <canvas id="canvas"></canvas>
+    </div>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/smart-labels@1"></script> -->
+    <script src="../dist/smartLabels.js"></script>
+
+    <script>
+      /* global d3, smartLabels */
+
+      let width = 800,
+        height = 600,
+        showAnchors = true,
+        showVoronoi = false,
+        labelsInCentroids = true,
+        threshold = 1000,
+        useSmartLabels = true;
+
+      d3.json(
+        "https://cdn.jsdelivr.net/npm/vega-datasets@2.9.0/data/cars.json"
+      ).then((cars) => {
+        const margin = { left: 40, bottom: 40, top: 10, right: 10 };
+        // for the axes
+        const svg = d3
+          .select("#target")
+          .select("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .attr("viewBox", [0, 0, width, height]);
+
+        const ratio = window.devicePixelRatio || 1;
+
+        const canvas = document.getElementById("canvas");
+        canvas.width = width * ratio;
+        canvas.height = height * ratio;
+        canvas.style.width = width + "px";
+        canvas.style.position = "absolute";
+        canvas.style.top = `${margin.top}px`;
+        canvas.style.left = `${margin.left}px`;
+        const ctx = canvas.getContext("2d");
+        ctx.scale(ratio, ratio);
+
+        
+        const x = (d) => d["Miles_per_Gallon"];
+        const y = (d) => d["Displacement"];
+        const data = cars.filter(
+          (d) =>
+            x(d) !== undefined &&
+            x(d) !== null &&
+            y(d) !== undefined &&
+            y(d) !== null
+        );
+
+        const xScale = d3
+          .scaleLinear()
+          .domain([0, d3.max(data, x)])
+          .range([0, width - margin.left - margin.right])
+          .nice();
+
+        const yScale = d3
+          .scaleLinear()
+          .domain([0, d3.max(data, y)])
+          .range([height - margin.top - margin.bottom, 0]);
+
+        const g = svg
+          .append("g")
+          .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+        g.append("g").call(d3.axisLeft(yScale));
+        g.append("g")
+          .attr("transform", `translate(0, ${yScale.range()[0]})`)
+          .call(d3.axisBottom(xScale));
+
+        // g.selectAll("circle")
+        //   .data(data)          
+        //   .join("circle")
+        //   .attr("fill", "red")
+        //   .attr("opacity", 0.3)
+        //   .attr("cx", (d) => xScale(x(d)))
+        //   .attr("cy", (d) => yScale(y(d)))
+        //   .attr("r", 3)
+        //   .append("title")
+        //   .text((d) => d.name);
+
+        function drawPoints() {
+          ctx.save();
+          ctx.globalAlpha = 0.7;
+          ctx.fillStyle = "black";
+          data.forEach((d) => {
+            ctx.beginPath();
+            ctx.arc(xScale(x(d)), yScale(y(d)), 3, 0, 2 * Math.PI);
+            ctx.fill();
+          });
+          ctx.restore();
+        }
+
+        function redrawLabels() {
+          const sl = smartLabels.smartLabels(data, {
+            target: canvas,
+            label: (d) => d.Name,
+            x: (d) => xScale(x(d)),
+            y: (d) => yScale(y(d)),
+            width: width - margin.left - margin.right,
+            height: height - margin.top - margin.bottom,
+            labelsInCentroids,
+            threshold,
+            showVoronoi: showVoronoi,
+            showAnchors: showAnchors,
+            renderer: "canvas",
+            onHover: drawPoints,
+            showPoints: false,
+            debug: true
+          });
+        }
+
+        function drawLabels() {
+          if (!useSmartLabels) {
+            ctx.font = "10px sans-serif";
+            ctx.fillStyle = "black";
+            data.forEach((d) => {
+              ctx.fillText(d.name, xScale(x(d)), yScale(y(d)));
+            });
+          } else {
+            redrawLabels();
+          }
+        }
+
+        function onThresholdChange() {
+          threshold = +d3.select("#inThreshold").node().value;
+          d3.select("#outThreshold").text(threshold);
+          ctx.clearRect(0, 0, width, height);
+          drawPoints();
+          drawLabels();
+        }
+
+        d3.select("#inThreshold").on("input", onThresholdChange);
+        onThresholdChange();
+      });
+    </script>
+  </body>
+</html>
