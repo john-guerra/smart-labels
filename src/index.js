@@ -84,7 +84,7 @@ export default function smartLabels(
     }
   }
 
-  if (!checkIfTargetMatchesRenderer(target, renderer)) {
+  if (target && !checkIfTargetMatchesRenderer(target, renderer)) {
     if (debug) console.log("❌ smartLabels Target doesn't match the renderer", target, renderer);
     throw new Error("Smartlabels Target doesn't match the renderer", target, renderer);
   }
