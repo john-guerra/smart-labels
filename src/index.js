@@ -24,15 +24,18 @@ export default function smartLabels(
     label = (d, i) => i, // Accessor for the label
     fill = "#333", // label fill color
     stroke = "white", // label stroke color
-    threshold = 2000, // Areas over this size would get labels
     width = null,
     height = null,
     target = null, // Where do you want it to draw
-    font = "10px sans-serif",
+    renderer = "svg", // canvas or svg
+    font = () => "18px sans-serif",
     hover = true, // Show label of the hovered point
     onHover = (i) => i, // callback when hovered, will pass the index of the selected element
-    hoverFont = "bolder 12px sans-serif",
+    hoverFont = () => "bolder 12px sans-serif",
     labelsInCentroids = true,
+    threshold = 2000, // Areas over this size would get labels
+    alwaysShow = (d) => false, // If returns true for the node, it will always show the label
+    showLabel = (d, cell) => alwaysShow(d) || -d3.polygonArea(cell) > threshold, // If true, show the label
 
     backgroundFill = "#fefefe01", // What to paint the bg rect of the labels. Needed for the onHover
     strokeWidth = 5,
@@ -52,7 +55,6 @@ export default function smartLabels(
     pointsFill = "#ccc",
     pointsSelectedFill = "firebrick",
     pointsStroke = "#ccc",
-    renderer = "svg",
     debug = false,
     selected = null,
     padding = 3, // label padding in pixels
@@ -65,6 +67,9 @@ export default function smartLabels(
       y(d, index) !== undefined &&
       y(d, index) !== null
   );
+
+  if (typeof font === "string") font = () => font;
+  if (typeof hoverFont === "string") hoverFont = () => hoverFont;
 
   let xExtent = d3.extent(data, x),
     yExtent = d3.extent(data, y);
@@ -85,8 +90,17 @@ export default function smartLabels(
   }
 
   if (target && !checkIfTargetMatchesRenderer(target, renderer)) {
-    if (debug) console.log("❌ smartLabels Target doesn't match the renderer", target, renderer);
-    throw new Error("Smartlabels Target doesn't match the renderer", target, renderer);
+    if (debug)
+      console.log(
+        "❌ smartLabels Target doesn't match the renderer",
+        target,
+        renderer
+      );
+    throw new Error(
+      "Smartlabels Target doesn't match the renderer",
+      target,
+      renderer
+    );
   }
 
   // Try to reuse the target
@@ -118,7 +132,7 @@ export default function smartLabels(
   // Replace null cells with the nearest one
   cells = cells
     .map(([d, cell], index) => [d, getNearestCell(d, cell, index)])
-    .map(([d, cell]) => ({ d, cell, show: -d3.polygonArea(cell) > threshold }));
+    .map(([d, cell]) => ({ d, cell, show: showLabel(d, cell) }));
 
   // cells can be null when we have duplicated coords
   // https://github.com/d3/d3-delaunay/issues/106
@@ -237,7 +251,7 @@ export default function smartLabels(
       .selectAll("text")
       .data((d) => d)
       .join("text")
-      .style("font", font)
+      .style("font", ({d}, i) => font(d, i))
       .each(function ({ d, cell }, index) {
         if (!cell) return;
         const [cx, cy] = d3.polygonCentroid(cell);
@@ -283,7 +297,9 @@ export default function smartLabels(
           .attr("display", ({ show }, i) =>
             i === selected || show ? null : "none"
           )
-          .style("font", (_, i) => (i === selected ? hoverFont : font))
+          .style("font", ({d}, i) =>
+            i === selected ? hoverFont(d, i) : font(d, i)
+          )
           .classed("selected", (_, i) => i === selected)
           .filter((_, i) => i === selected)
           .raise();
@@ -409,7 +425,7 @@ export default function smartLabels(
             : angle === 2
               ? "middle"
               : "bottom";
-      context.font = index === selected ? hoverFont : font;
+      context.font = index === selected ? hoverFont(d, index) : font(d, index);
       context.fillStyle = fill;
       context.strokeStyle = stroke;
       context.lineWidth = strokeWidth;

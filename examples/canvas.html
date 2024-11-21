@@ -65,7 +65,6 @@
         const ctx = canvas.getContext("2d");
         ctx.scale(ratio, ratio);
 
-        
         const x = (d) => d["Miles_per_Gallon"];
         const y = (d) => d["Displacement"];
         const data = cars.filter(
@@ -123,7 +122,18 @@
             renderer: "canvas",
             onHover: drawPoints,
             showPoints: false,
-            debug: true
+            debug: true,
+            font: (
+              d //Draw one car larger than the others for highlighting
+            ) =>
+              d.Name === "chevrolet chevelle malibu"
+                ? "18pt sans-serif"
+                : "10pt sans-serif",
+            onHoverFont: (d) =>
+              d.Name === "chevrolet chevelle malibu"
+                ? "bold 18pt sans-serif"
+                : "bold 10pt sans-serif",
+            alwaysShow: (d) => d.Name === "chevrolet chevelle malibu",
           });
         }
 
