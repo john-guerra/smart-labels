@@ -28,10 +28,10 @@ export default function smartLabels(
     height = null,
     target = null, // Where do you want it to draw
     renderer = "svg", // canvas or svg
-    font = () => "10px sans-serif",
+    font = () => "10pt sans-serif",
     hover = true, // Show label of the hovered point
     onHover = (i) => i, // callback when hovered, will pass the index of the selected element
-    hoverFont = () => "bolder 12px sans-serif",
+    hoverFont = () => "bolder 12pt sans-serif",
     labelsInCentroids = true,
     threshold = 2000, // Areas over this size would get labels
     alwaysShow = (d) => false, // If returns true for the node, it will always show the label
