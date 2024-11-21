@@ -8,8 +8,6 @@ Receives the data, accessors for the x and y coordinates as well as the label. E
 
 ## Usage
 
-
-
 ```html  
   <script src="https://cdn.jsdelivr.net/npm/smart-labels"></script>
   <script>
@@ -27,7 +25,51 @@ Receives the data, accessors for the x and y coordinates as well as the label. E
   </script>
 ```
 
-See [smartLabels](https://observablehq.com/@john-guerra/smart-labels#smartLabels) for more options
+### Default options
+
+```js
+{
+    x = (d) => d[0], // x coordinate accessor, expected to be in pixels
+    y = (d) => d[1], // y coordinate accessor, expected to be in pixels
+    r = () => 3, // radius accessor, expected to be in pixels
+    label = (d, i) => i, // Accessor for the label
+    fill = "#333", // label fill color
+    stroke = "white", // label stroke color
+    threshold = 2000, // Areas over this size would get labels
+    width = null,
+    height = null,
+    target = null, // Where do you want it to draw
+    font = "10px sans-serif",
+    hover = true, // Show label of the hovered point
+    onHover = (i) => i, // callback when hovered, will pass the index of the selected element
+    hoverFont = "bolder 12px sans-serif",
+    labelsInCentroids = true,
+
+    backgroundFill = "#fefefe01", // What to paint the bg rect of the labels. Needed for the onHover
+    strokeWidth = 5,
+
+    showVoronoi = false,
+    voronoiStroke = "#ccc",
+
+    showAnchors = false,
+    anchorsStroke = "orange",
+    anchorsFill = "none",
+
+    useOcclusion = true,
+    occludedStyle = "opacity: 0.2", // css style rules to be used on occluded labels
+
+    // For debugging
+    showPoints = false,
+    pointsFill = "#ccc",
+    pointsSelectedFill = "firebrick",
+    pointsStroke = "#ccc",
+    renderer = "svg",
+    debug = false,
+    selected = null,
+    padding = 3, // label padding in pixels
+  }
+```
+
 
 ## Known problems
 
@@ -37,4 +79,6 @@ See [smartLabels](https://observablehq.com/@john-guerra/smart-labels#smartLabels
 
 ## More examples
 
-Please see the [/examples] folder
+For observable notebooks please see [@john-guerra/smart-labels](https://observablehq.com/@john-guerra/smart-labels#smartLabels)
+
+For other vanilla JS examples see the [/examples](/examples) folder
