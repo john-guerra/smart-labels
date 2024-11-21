@@ -33,9 +33,9 @@ Receives the data, accessors for the x and y coordinates as well as the label. E
     y = (d) => d[1], // y coordinate accessor, expected to be in pixels
     r = () => 3, // radius accessor, expected to be in pixels
     label = (d, i) => i, // Accessor for the label
+    renderer = "svg", // canvas or svg
     fill = "#333", // label fill color
     stroke = "white", // label stroke color
-    threshold = 2000, // Areas over this size would get labels
     width = null,
     height = null,
     target = null, // Where do you want it to draw
@@ -44,7 +44,9 @@ Receives the data, accessors for the x and y coordinates as well as the label. E
     onHover = (i) => i, // callback when hovered, will pass the index of the selected element
     hoverFont = "bolder 12px sans-serif",
     labelsInCentroids = true,
-
+    threshold = 2000, // Areas over this size would get labels
+    alwaysShow = (d) => false, // If returns true for the node, it will always show the label
+    showLabel = (d, cell) => alwaysShow(d) || -d3.polygonArea(cell) > threshold, // If true, show the label
     backgroundFill = "#fefefe01", // What to paint the bg rect of the labels. Needed for the onHover
     strokeWidth = 5,
 
@@ -63,10 +65,10 @@ Receives the data, accessors for the x and y coordinates as well as the label. E
     pointsFill = "#ccc",
     pointsSelectedFill = "firebrick",
     pointsStroke = "#ccc",
-    renderer = "svg",
     debug = false,
     selected = null,
     padding = 3, // label padding in pixels
+
   }
 ```
 
