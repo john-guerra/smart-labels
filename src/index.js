@@ -28,7 +28,7 @@ export default function smartLabels(
     height = null,
     target = null, // Where do you want it to draw
     renderer = "svg", // canvas or svg
-    font = () => "18px sans-serif",
+    font = () => "10px sans-serif",
     hover = true, // Show label of the hovered point
     onHover = (i) => i, // callback when hovered, will pass the index of the selected element
     hoverFont = () => "bolder 12px sans-serif",
