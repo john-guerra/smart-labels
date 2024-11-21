@@ -68,7 +68,6 @@ Receives the data, accessors for the x and y coordinates as well as the label. E
     debug = false,
     selected = null,
     padding = 3, // label padding in pixels
-
   }
 ```
 
