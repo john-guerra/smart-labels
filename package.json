@@ -1,6 +1,6 @@
 {
   "name": "smart-labels",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A basic library for adding labels to a visualization when there is enough space",
   "type": "module",
   "main": "dist/smartLabels.min.js",
