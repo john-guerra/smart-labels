@@ -60,6 +60,11 @@ export default function smartLabels(
     padding = 3, // label padding in pixels
   } = {}
 ) {
+  if (!data || data?.length === 0) {
+    console.log("smartLabels: No data to render");
+    return target;
+  }
+
   data = data.filter(
     (d, index) =>
       x(d, index) !== undefined &&

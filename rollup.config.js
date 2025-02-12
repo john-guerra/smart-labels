@@ -4,7 +4,7 @@ import commonjs from "rollup-plugin-commonjs";
 import terser from "@rollup/plugin-terser";
 // import babel from "rollup-plugin-babel";
 import json from "@rollup/plugin-json";
-import meta from "./package.json" assert { type: "json" };
+import meta from "./package.json" with { type: "json" };
 
 // Extract copyrights from the LICENSE.
 const copyrights = readFileSync("./LICENSE", "utf-8")
@@ -23,7 +23,7 @@ const config = {
     banner: `// ${meta.name} v${meta.version} Copyright ${copyrights.join(", ")}`,
     extend: true,
     globals: {
-      "d3": "d3",    
+      "d3": "d3",
     },
     name: "smartLabels",
   },
