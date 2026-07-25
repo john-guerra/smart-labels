@@ -34,6 +34,10 @@
     "url": "https://johnguerra.co"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/john-guerra/smart-labels.git"
+  },
   "bugs": {
     "url": "https://github.com/john-guerra/smart-labels/issues"
   },
