@@ -51,6 +51,14 @@ export default [
     ...config,
     output: {
       ...config.output,
+      format: "cjs",
+      file: `dist/${filename}.cjs`,
+    },
+  },
+  {
+    ...config,
+    output: {
+      ...config.output,
       format: "umd",
       file: `dist/${filename}.min.js`,
     },
