@@ -199,26 +199,12 @@ export default function smartLabels(
       .attr("fill", backgroundFill)
       .attr("stroke", "none");
 
+    // dr: the distance from the point, r(d, i) + padding (computed by the caller from the user's datum)
     const orient = {
-      top: (text) =>
-        text
-          .attr("text-anchor", "middle")
-          .attr("y", (d, i) => -(r(d, i) + padding)),
-      right: (text) =>
-        text
-          .attr("text-anchor", "start")
-          .attr("dy", "0.35em")
-          .attr("x", (d, i) => r(d, i) + padding),
-      bottom: (text) =>
-        text
-          .attr("text-anchor", "middle")
-          .attr("dy", "0.71em")
-          .attr("y", (d, i) => r(d, i) + padding),
-      left: (text) =>
-        text
-          .attr("text-anchor", "end")
-          .attr("dy", "0.35em")
-          .attr("x", (d, i) => -(r(d, i) + padding)),
+      top: (text, dr) => text.attr("text-anchor", "middle").attr("y", -dr),
+      right: (text, dr) => text.attr("text-anchor", "start").attr("dy", "0.35em").attr("x", dr),
+      bottom: (text, dr) => text.attr("text-anchor", "middle").attr("dy", "0.71em").attr("y", dr),
+      left: (text, dr) => text.attr("text-anchor", "end").attr("dy", "0.35em").attr("x", -dr),
     };
 
     if (showAnchors || labelsInCentroids) {
@@ -298,7 +284,8 @@ export default function smartLabels(
               ? orient.top
               : angle === 1
                 ? orient.bottom
-                : orient.left
+                : orient.left,
+          r(d, index) + padding
         );
       })
       .attr("transform", ({ d, cell }, index) => {
