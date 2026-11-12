@@ -39,13 +39,13 @@ Receives the data, accessors for the x and y coordinates as well as the label. E
     width = null,
     height = null,
     target = null, // Where do you want it to draw
-    font = "10px sans-serif",
+    font = "10pt sans-serif", // string or (d, i) => string
     hover = true, // Show label of the hovered point
     onHover = (i) => i, // callback when hovered, will pass the index of the selected element
-    hoverFont = "bolder 12px sans-serif",
+    hoverFont = "bolder 12pt sans-serif", // string or (d, i) => string
     labelsInCentroids = true,
     threshold = 2000, // Areas over this size would get labels
-    alwaysShow = (d) => false, // If returns true for the node, it will always show the label
+    alwaysShow = () => false, // If returns true for the node, it will always show the label
     showLabel = (d, cell) => alwaysShow(d) || -d3.polygonArea(cell) > threshold, // If true, show the label
     backgroundFill = "#fefefe01", // What to paint the bg rect of the labels. Needed for the onHover
     strokeWidth = 5,
@@ -75,6 +75,30 @@ Receives the data, accessors for the x and y coordinates as well as the label. E
   }
 ```
 
+
+## Keeping labels off the points
+
+By default, occlusion only hides labels that overlap other labels, so a label can still be drawn on top of another point. Two options (SVG only, since they need `useOcclusion`) help with that:
+
+- **`avoidPoints`** also hides labels that cover another point's circle, using `x`, `y` and `r`. Pass `true` to check every point, or `(d, i) => boolean` to check only some of them, e.g. the points with images or the ones you care about. A label is never hidden by its own point.
+- **`tryOtherPositions`** gives an occluded label another chance: it tries the other sides of its anchor (the opposite side first, then the remaining two) and keeps the first free one. The anchor is the point, or the cell's centroid when `labelsInCentroids` is `true`.
+
+```js
+smartLabels(data, {
+  target: svg,
+  x: (d) => xScale(d.x),
+  y: (d) => yScale(d.y),
+  r: () => 4, // the radius of your circles, in pixels
+  label: (d) => d.name,
+  labelsInCentroids: false,
+  avoidPoints: true,
+  tryOtherPositions: true,
+});
+```
+
+![Three scatterplots of the same 30 points. Default: 22 labels shown, 2 drawn over another point. avoidPoints: 20 shown, none over another point. avoidPoints with tryOtherPositions: 24 shown, none over another point.](https://raw.githubusercontent.com/john-guerra/smart-labels/main/examples/avoid-points.png)
+
+From [examples/avoid-points.html](examples/avoid-points.html): the same 30 points with `threshold: 0` and occluded labels hidden. `avoidPoints` alone removes the labels that sat on other points; adding `tryOtherPositions` moves labels to a free side instead of hiding them, so more labels are shown than with the default.
 
 ## Known problems
 

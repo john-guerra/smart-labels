@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Labels: avoidPoints and tryOtherPositions</title>
+    <style>
+      body { font-family: sans-serif; margin: 16px; }
+      .panels { display: flex; flex-wrap: wrap; gap: 16px; }
+      figure { margin: 0; }
+      figcaption { font-size: 13px; margin-top: 4px; }
+      figcaption code { font-size: 12px; }
+      svg { border: 1px solid #ddd; }
+    </style>
+  </head>
+  <body>
+    <div class="panels" id="panels"></div>
+    <script
+      src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"
+      integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/smart-labels@0.0.16/dist/smartLabels.min.js"
+      integrity="sha384-+PzDd8sQGm3CAJXWs3TDoPAjc/htrjy3SRPLIQozgnMOpxEwIPr4OvIy3jVCSLXf"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      /* global d3, smartLabels */
+      const width = 320,
+        height = 260,
+        r = 4;
+
+      // Seeded random clusters, so every panel (and every reload) shows the same points
+      const random = d3.randomNormal.source(d3.randomLcg(42));
+      const names = ["Ada", "Bo", "Cyd", "Dee", "Eli", "Fay", "Gus", "Hal", "Ivy", "Jo",
+        "Kai", "Lu", "Max", "Ned", "Oz", "Pia", "Quin", "Rex", "Sol", "Tia",
+        "Uma", "Vic", "Wes", "Xan", "Yul", "Zoe", "Amy", "Ben", "Cal", "Dot"];
+      const centers = [[90, 90], [220, 110], [150, 190]];
+      const data = names.map((name, i) => {
+        const [cx, cy] = centers[i % centers.length];
+        return { name, x: random(cx, 28)(), y: random(cy, 22)() };
+      });
+
+      const panels = [
+        { title: "default", options: {} },
+        { title: "avoidPoints: true", options: { avoidPoints: true } },
+        { title: "avoidPoints + tryOtherPositions", options: { avoidPoints: true, tryOtherPositions: true } },
+      ];
+
+      for (const { title, options } of panels) {
+        const figure = d3.select("#panels").append("figure");
+        const svg = figure.append("svg").attr("width", width).attr("height", height);
+        const caption = figure.append("figcaption");
+        caption.append("code").text(title);
+        const stats = caption.append("div");
+
+        svg.append("g")
+          .selectAll("circle")
+          .data(data)
+          .join("circle")
+          .attr("cx", (d) => d.x)
+          .attr("cy", (d) => d.y)
+          .attr("r", r)
+          .attr("fill", "steelblue");
+
+        smartLabels(data, {
+          target: svg,
+          width,
+          height,
+          x: (d) => d.x,
+          y: (d) => d.y,
+          r: () => r,
+          label: (d) => d.name,
+          labelsInCentroids: false,
+          threshold: 0, // try to label every point, and let occlusion decide
+          occludedStyle: "display: none",
+          ...options,
+        });
+
+        // Once occlusion has run, count the labels shown and those drawn over another point
+        setTimeout(() => {
+          const ctm = svg.node().getScreenCTM();
+          const points = data.map((d) => ({ x: ctm.e + d.x, y: ctm.f + d.y }));
+          const texts = svg.selectAll("g.labels > text").nodes();
+          const shown = texts.filter((t) => !t.classList.contains("occluded"));
+          const overPoints = shown.filter((t) => {
+            const b = t.getBoundingClientRect();
+            const own = texts.indexOf(t);
+            return points.some((p, j) => j !== own &&
+              Math.hypot(p.x - Math.max(b.left, Math.min(p.x, b.right)),
+                p.y - Math.max(b.top, Math.min(p.y, b.bottom))) < r);
+          });
+          stats.text(`${shown.length} of ${data.length} labels shown, ${overPoints.length} over another point`);
+        }, 200);
+      }
+    </script>
+  </body>
+</html>
