@@ -49,6 +49,7 @@ export default function smartLabels(
     anchorsFill = "none",
 
     useOcclusion = true,
+    tryOtherPositions = false, // with occlusion, an occluded label tries the point's other sides before hiding
     avoidPoints = false, // with occlusion, also hide labels that cover another point's circle (x, y, r);
                          // true for every point, or (d, i) => boolean for the points that should block labels
     occludedStyle = "opacity: 0.2", // css style rules to be used on occluded labels
@@ -199,6 +200,18 @@ export default function smartLabels(
       .attr("fill", backgroundFill)
       .attr("stroke", "none");
 
+    // the label's sides to try, preferred first (the opposite side next), and a setter that clears the
+    // previous side's attributes (used on every render, and by tryOtherPositions)
+    const OPPOSITE = { right: "left", left: "right", top: "bottom", bottom: "top" };
+    const sides = {
+      order: (node) => {
+        const s = node.__smartLabel.side;
+        return [s, OPPOSITE[s], ...["right", "left", "top", "bottom"].filter((k) => k !== s && k !== OPPOSITE[s])];
+      },
+      set: (node, side) =>
+        d3.select(node).attr("x", null).attr("y", null).attr("dy", null).call(orient[side], node.__smartLabel.dr),
+    };
+
     // dr: the distance from the point, r(d, i) + padding (computed by the caller from the user's datum)
     const orient = {
       top: (text, dr) => text.attr("text-anchor", "middle").attr("y", -dr),
@@ -277,16 +290,9 @@ export default function smartLabels(
             4) %
           4;
 
-        d3.select(this).call(
-          angle === 0
-            ? orient.right
-            : angle === 3
-              ? orient.top
-              : angle === 1
-                ? orient.bottom
-                : orient.left,
-          r(d, index) + padding
-        );
+        const side = angle === 0 ? "right" : angle === 3 ? "top" : angle === 1 ? "bottom" : "left";
+        this.__smartLabel = { side, dr: r(d, index) + padding }; // for tryOtherPositions
+        sides.set(this, side); // clears x/y/dy left from a previous render on another side
       })
       .attr("transform", ({ d, cell }, index) => {
         if (labelsInCentroids) {
@@ -340,7 +346,8 @@ export default function smartLabels(
     // Setup a MutationObserver to wait for the element to be rendered
     // https://stackoverflow.com/questions/15875128/is-there-element-rendered-event
     if (useOcclusion) {
-      const runOcclusion = () => target.call(occlusion, "g.labels > text", avoidPoints ? pointCircles() : []);
+      const runOcclusion = () =>
+        target.call(occlusion, "g.labels > text", avoidPoints ? pointCircles() : [], tryOtherPositions ? sides : null);
       // Already on the page: measure on the next frame, once the labels are laid out.
       // Otherwise wait until the target is added to the document.
       if (document.contains(target.node())) {
@@ -506,22 +513,42 @@ export default function smartLabels(
 // WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 // ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-function occlusion(svg, against = "text", circles = []) {
+// sides (optional): {order(node) -> [side, ...], set(node, side)}: an occluded label tries each side in
+// order and keeps the first free one; if none is free it goes back to its first side, occluded.
+function occlusion(svg, against = "text", circles = [], sides = null) {
+  const measure = (node) => {
+    const { x, y, width, height } = node.getBoundingClientRect();
+    return { node, x, y, width, height };
+  };
   const nodes = d3
     .sort(svg.selectAll(against), (node) => +node.getAttribute("data-priority"))
     .reverse()
-    .map((node) => {
-      const { x, y, width, height } = node.getBoundingClientRect();
-      return { node, x, y, width, height };
-    });
+    .map(measure);
 
   const visible = [];
-  for (const d of nodes) {
-    // a label is never occluded by its own point (circles carry the data index, labels the cell's index)
+  // a label is never occluded by its own point (circles carry the data index, labels the cell's index)
+  const blocked = (d) => {
     const own = d3.select(d.node).datum()?.index;
-    const occluded =
+    return (
       visible.some((e) => intersectRect(d, e)) ||
-      circles.some((c) => c.index !== own && rectIntersectsCircle(d, c));
+      circles.some((c) => c.index !== own && rectIntersectsCircle(d, c))
+    );
+  };
+  for (let d of nodes) {
+    let occluded = blocked(d);
+    if (occluded && sides && d.width > 0 && d.node.__smartLabel) {
+      const order = sides.order(d.node);
+      for (const side of order.slice(1)) {
+        sides.set(d.node, side);
+        const moved = measure(d.node);
+        if (!blocked(moved)) {
+          d = moved;
+          occluded = false;
+          break;
+        }
+      }
+      if (occluded) sides.set(d.node, order[0]);
+    }
     d3.select(d.node).classed("occluded", occluded);
     if (!occluded) visible.push(d);
   }

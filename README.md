@@ -59,6 +59,8 @@ Receives the data, accessors for the x and y coordinates as well as the label. E
 
     useOcclusion = true,
     occludedStyle = "opacity: 0.2", // css style rules to be used on occluded labels
+    tryOtherPositions = false, // with occlusion, an occluded label tries the point's other sides
+                               // (opposite side first) before being hidden
     avoidPoints = false, // with occlusion, also hide labels that cover another point's circle (x, y, r):
                          // true for every point, or (d, i) => boolean for the points that should block labels
 
