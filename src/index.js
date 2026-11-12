@@ -34,7 +34,7 @@ export default function smartLabels(
     hoverFont = () => "bolder 12pt sans-serif",
     labelsInCentroids = true,
     threshold = 2000, // Areas over this size would get labels
-    alwaysShow = (d) => false, // If returns true for the node, it will always show the label
+    alwaysShow = () => false, // If returns true for the node, it will always show the label
     showLabel = (d, cell) => alwaysShow(d) || -d3.polygonArea(cell) > threshold, // If true, show the label
 
     backgroundFill = "#fefefe01", // What to paint the bg rect of the labels. Needed for the onHover
