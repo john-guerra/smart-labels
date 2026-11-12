@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { rectIntersectsCircle } from "./geometry.js";
 // Based on https://observablehq.com/@d3/voronoi-labels by Mike Bostock
 
 // ISC License
@@ -48,6 +49,8 @@ export default function smartLabels(
     anchorsFill = "none",
 
     useOcclusion = true,
+    avoidPoints = false, // with occlusion, also hide labels that cover another point's circle (x, y, r);
+                         // true for every point, or (d, i) => boolean for the points that should block labels
     occludedStyle = "opacity: 0.2", // css style rules to be used on occluded labels
 
     // For debugging
@@ -159,6 +162,19 @@ export default function smartLabels(
       cell = cells[i][1];
     }
     return cell;
+  }
+
+  // the points as client-space circles, to compare with the labels' getBoundingClientRect()
+  function pointCircles() {
+    const ctm = target.node().getScreenCTM();
+    if (!ctm) return [];
+    const scale = Math.hypot(ctm.a, ctm.b);
+    const blocks = typeof avoidPoints === "function" ? avoidPoints : () => true;
+    return data.flatMap((d, i) => {
+      if (!blocks(d, i)) return [];
+      const px = x(d, i), py = y(d, i);
+      return [{ x: ctm.a * px + ctm.c * py + ctm.e, y: ctm.b * px + ctm.d * py + ctm.f, r: r(d, i) * scale }];
+    });
   }
 
   function renderSVG() {
@@ -337,19 +353,26 @@ export default function smartLabels(
     // Setup a MutationObserver to wait for the element to be rendered
     // https://stackoverflow.com/questions/15875128/is-there-element-rendered-event
     if (useOcclusion) {
-      const observer = new MutationObserver(function () {
-        if (document.contains(target.node())) {
-          target.call(occlusion, "g.labels > text");
-          observer.disconnect();
-        }
-      });
+      const runOcclusion = () => target.call(occlusion, "g.labels > text", avoidPoints ? pointCircles() : []);
+      // Already on the page: measure on the next frame, once the labels are laid out.
+      // Otherwise wait until the target is added to the document.
+      if (document.contains(target.node())) {
+        (window.requestAnimationFrame || setTimeout)(runOcclusion);
+      } else {
+        const observer = new MutationObserver(function () {
+          if (document.contains(target.node())) {
+            runOcclusion();
+            observer.disconnect();
+          }
+        });
 
-      observer.observe(document, {
-        attributes: false,
-        childList: true,
-        characterData: false,
-        subtree: true,
-      });
+        observer.observe(document, {
+          attributes: false,
+          childList: true,
+          characterData: false,
+          subtree: true,
+        });
+      }
     }
   } // renderSVG
 
@@ -496,7 +519,7 @@ export default function smartLabels(
 // WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 // ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 // OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-function occlusion(svg, against = "text") {
+function occlusion(svg, against = "text", circles = []) {
   const nodes = d3
     .sort(svg.selectAll(against), (node) => +node.getAttribute("data-priority"))
     .reverse()
@@ -507,7 +530,7 @@ function occlusion(svg, against = "text") {
 
   const visible = [];
   for (const d of nodes) {
-    const occluded = visible.some((e) => intersectRect(d, e));
+    const occluded = visible.some((e) => intersectRect(d, e)) || circles.some((c) => rectIntersectsCircle(d, c));
     d3.select(d.node).classed("occluded", occluded);
     if (!occluded) visible.push(d);
   }
