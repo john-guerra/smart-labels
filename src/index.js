@@ -148,7 +148,7 @@ export default function smartLabels(
   // Replace null cells with the nearest one
   cells = cells
     .map(([d, cell], index) => [d, getNearestCell(d, cell, index)])
-    .map(([d, cell]) => ({ d, cell, show: showLabel(d, cell) }));
+    .map(([d, cell], index) => ({ d, cell, show: showLabel(d, cell), index }));
 
   // cells can be null when we have duplicated coords
   // https://github.com/d3/d3-delaunay/issues/106
@@ -173,7 +173,7 @@ export default function smartLabels(
     return data.flatMap((d, i) => {
       if (!blocks(d, i)) return [];
       const px = x(d, i), py = y(d, i);
-      return [{ x: ctm.a * px + ctm.c * py + ctm.e, y: ctm.b * px + ctm.d * py + ctm.f, r: r(d, i) * scale }];
+      return [{ x: ctm.a * px + ctm.c * py + ctm.e, y: ctm.b * px + ctm.d * py + ctm.f, r: r(d, i) * scale, index: i }];
     });
   }
 
@@ -517,7 +517,11 @@ function occlusion(svg, against = "text", circles = []) {
 
   const visible = [];
   for (const d of nodes) {
-    const occluded = visible.some((e) => intersectRect(d, e)) || circles.some((c) => rectIntersectsCircle(d, c));
+    // a label is never occluded by its own point (circles carry the data index, labels the cell's index)
+    const own = d3.select(d.node).datum()?.index;
+    const occluded =
+      visible.some((e) => intersectRect(d, e)) ||
+      circles.some((c) => c.index !== own && rectIntersectsCircle(d, c));
     d3.select(d.node).classed("occluded", occluded);
     if (!occluded) visible.push(d);
   }

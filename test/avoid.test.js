@@ -19,7 +19,6 @@ test("a circle near a corner, but outside it, does not", () => {
   assert.equal(rectIntersectsCircle(label, { x: 56, y: 28, r: 8 }), false);
 });
 
-test("a circle just touching the label (the label's own point) does not count", () => {
-  // labels sit r + padding away from their own point; touching within 0.5px is not an overlap
+test("a circle just touching the label does not count", () => {
   assert.equal(rectIntersectsCircle(label, { x: 30, y: 27, r: 5 }), false);
 });
