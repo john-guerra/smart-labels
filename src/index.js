@@ -200,7 +200,8 @@ export default function smartLabels(
       .attr("fill", backgroundFill)
       .attr("stroke", "none");
 
-    // tryOtherPositions: the label's sides to try, preferred first (the opposite side next), and a setter
+    // the label's sides to try, preferred first (the opposite side next), and a setter that clears the
+    // previous side's attributes (used on every render, and by tryOtherPositions)
     const OPPOSITE = { right: "left", left: "right", top: "bottom", bottom: "top" };
     const sides = {
       order: (node) => {
@@ -291,7 +292,7 @@ export default function smartLabels(
 
         const side = angle === 0 ? "right" : angle === 3 ? "top" : angle === 1 ? "bottom" : "left";
         this.__smartLabel = { side, dr: r(d, index) + padding }; // for tryOtherPositions
-        d3.select(this).call(orient[side], this.__smartLabel.dr);
+        sides.set(this, side); // clears x/y/dy left from a previous render on another side
       })
       .attr("transform", ({ d, cell }, index) => {
         if (labelsInCentroids) {
