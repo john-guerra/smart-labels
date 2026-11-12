@@ -1,9 +1,5 @@
 import { readFileSync } from "fs";
-import node from "@rollup/plugin-node-resolve";
-import commonjs from "rollup-plugin-commonjs";
 import terser from "@rollup/plugin-terser";
-// import babel from "rollup-plugin-babel";
-import json from "@rollup/plugin-json";
 import meta from "./package.json" with { type: "json" };
 
 // Extract copyrights from the LICENSE.
@@ -27,7 +23,7 @@ const config = {
     },
     name: "smartLabels",
   },
-  plugins: [commonjs(), json(), node()],
+  plugins: [],
 };
 
 export default [
