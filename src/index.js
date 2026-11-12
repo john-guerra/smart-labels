@@ -73,8 +73,16 @@ export default function smartLabels(
       y(d, index) !== null
   );
 
-  if (typeof font === "string") font = () => font;
-  if (typeof hoverFont === "string") hoverFont = () => hoverFont;
+  // Keep the string in its own constant: `font = () => font` would return the
+  // arrow function itself (font is reassigned), so string fonts were ignored.
+  if (typeof font === "string") {
+    const fontString = font;
+    font = () => fontString;
+  }
+  if (typeof hoverFont === "string") {
+    const hoverFontString = hoverFont;
+    hoverFont = () => hoverFontString;
+  }
 
   let xExtent = d3.extent(data, x),
     yExtent = d3.extent(data, y);
