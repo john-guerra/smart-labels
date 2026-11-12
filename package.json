@@ -1,6 +1,6 @@
 {
   "name": "smart-labels",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "Fast automatic label placement for D3 scatterplots using Voronoi cells and occlusion detection",
   "keywords": [
     "d3",
